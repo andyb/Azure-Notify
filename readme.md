@@ -1,5 +1,5 @@
 A simple console app to monitor the status of a Microsoft Azure Service and notify by email when a change occurs.
-To use open the solution in VS2010 complete the config variables for smtp server/ email / Windows Azure service at the top of Program.cs and build. You can then run the console app exe.
+To use open the solution in VS2010 complete the config variables for smtp server/ email / Windows Azure service at the top of Program.cs and build. You can then run Notify.exe in /bin.
 
 License
 -------

@@ -13,7 +13,7 @@ using System.Net.Mail;
 namespace Notify
 {    
     class Program
-    {
+    {        
         /// <summary>
         /// Config settings - please configure the strings below to setup smtp account for email and Windows Azure service to monitor
         /// </summary>
@@ -35,7 +35,7 @@ namespace Notify
         // previously added as a management certificate within the Windows Azure management portal.
         private static string thumbPrint = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
         //The time period to recheck the service status in seconds
-        private static long secondsToCheck = 30;
+        private static long secondsToCheck = 30;        
 
         static void Main(string[] args)
         {
@@ -116,13 +116,12 @@ namespace Notify
                                 select e;
 
                     var list = query.ToList();
-
-                    var temp = list[0];
+                    
                     list.ForEach(x =>
                     {
 
                         var deployments = from e in x.Elements()
-                                          select new Tuple<string, string>((string)e.Element("{http://schemas.microsoft.com/windowsazure}Url"), (string)e.Element("{http://schemas.microsoft.com/windowsazure}Status"));
+                                          select new Tuple<string, string>(DecodeFrom64((string)e.Element("{http://schemas.microsoft.com/windowsazure}Label")), (string)e.Element("{http://schemas.microsoft.com/windowsazure}Status"));
 
 
                         deployments.ToList().ForEach(xx =>
@@ -159,6 +158,12 @@ namespace Notify
                 Console.WriteLine("Error encountered: " + ex.Message);
             }
                   
+        }
+
+        static public string DecodeFrom64(string encodedData)
+        {
+            byte[] encodedDataAsBytes = System.Convert.FromBase64String(encodedData);
+            return System.Text.ASCIIEncoding.ASCII.GetString(encodedDataAsBytes);            
         }
 
 

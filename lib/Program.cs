@@ -14,8 +14,6 @@ namespace Notify
 {    
     class Program
     {
-
-        
         /// <summary>
         /// Config settings - please configure the strings below to setup smtp account for email and Windows Azure service to monitor
         /// </summary>
@@ -38,7 +36,6 @@ namespace Notify
         private static string thumbPrint = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
         //The time period to recheck the service status in seconds
         private static long secondsToCheck = 30;
-        
 
         static void Main(string[] args)
         {
@@ -80,7 +77,7 @@ namespace Notify
                                      + operation);
 
 
-                Timer timer = new Timer((o) =>
+                timer = new Timer((o) =>
                 {
                     GetStatus(certificate, requestUri);
                 }, null, 0, secondsToCheck * 1000);
@@ -193,5 +190,6 @@ namespace Notify
 
         //tracks deployments
         private static Dictionary<string, string> deploymentTracker = new Dictionary<string, string>();
+        private static Timer timer;
     }
 }

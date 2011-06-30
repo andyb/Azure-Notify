@@ -18,20 +18,17 @@ namespace Notify
         static void Main(string[] args)
         {
             try
-            {                
-                // X.509 certificate variables.
+            {                                
                 X509Store certStore = null;
                 X509Certificate2Collection certCollection = null;
-                X509Certificate2 certificate = null;
-
-
-                // URI variable.
+                X509Certificate2 certificate = null;                
                 Uri requestUri = null;
 
 
                 //service to monitor
                 string serviceName = "sharpcloud-test";
 
+                //service opration
                 string operation = "hostedservices" + "/" + serviceName + "?embed-detail=true";
 
                 // The ID for the Windows Azure subscription.
@@ -41,30 +38,29 @@ namespace Notify
                 // previously added as a management certificate within the Windows Azure management portal.
                 string thumbPrint = "ACFC0FBD3AE4EB6E242B99B82B56DF2D240E37E6";
 
-                // Open the certificate store for the current user.
+                //The time period to recheck the service status in seconds
+                long secondsToCheck = 30;
+                
                 certStore = new X509Store(StoreName.My, StoreLocation.CurrentUser);
                 certStore.Open(OpenFlags.ReadOnly);
-
-                // Find the certificate with the specified thumbprint.
                 certCollection = certStore.Certificates.Find(
                                      X509FindType.FindByThumbprint,
                                      thumbPrint,
                                      false);
-
-                // Close the certificate store.
+                
                 certStore.Close();
 
-                // Check to see if a matching certificate was found.
                 if (certCollection.Count == 0)
                 {
                     throw new Exception("No certificate found containing thumbprint " + thumbPrint);
                 }
 
-                // A matching certificate was found.
                 certificate = certCollection[0];
                 Console.WriteLine(">> Using certificate with thumbprint: " + thumbPrint);
                 Console.WriteLine(">> Fetching status of service: " + serviceName);
-                // Create the request.
+                Console.WriteLine(">> With subscription id of: " + subscriptionId);
+                Console.WriteLine(">> Checking every " + secondsToCheck + " seconds");
+
                 requestUri = new Uri("https://management.core.windows.net/"
                                      + subscriptionId
                                      + "/services/"
@@ -72,10 +68,9 @@ namespace Notify
 
 
                 Timer timer = new Timer((o) =>
-                {
-                    Console.Write("Checking...");
+                {                    
                     GetStatus(certificate, requestUri);
-                },null,0,30000);
+                },null,0,secondsToCheck * 1000);
                 
                 
                 
@@ -91,75 +86,53 @@ namespace Notify
         }
 
         private static void GetStatus(X509Certificate2 certificate, Uri requestUri)
-        {
-
-            // Request and response variables.
-            HttpWebRequest httpWebRequest = null;
-            HttpWebResponse httpWebResponse = null;
-
-            // Stream variables.
-            Stream responseStream = null;
-            StreamReader reader = null;
-
-            httpWebRequest = (HttpWebRequest)HttpWebRequest.Create(requestUri);
-
-            // Add the certificate to the request.
+        {                        
+            HttpWebRequest httpWebRequest = (HttpWebRequest)HttpWebRequest.Create(requestUri);
             httpWebRequest.ClientCertificates.Add(certificate);
-
-            // Specify the version information in the header.
             httpWebRequest.Headers.Add("x-ms-version", "2011-02-25");
-
-            // Make the call using the web request.
-            httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-
-            // Parse the web response.
-            responseStream = httpWebResponse.GetResponseStream();
-            reader = new StreamReader(responseStream);
-
-            var result = XDocument.Parse(reader.ReadToEnd());
-
-            var query = from e in result.Elements().Elements()
-                        where e.Name == "{http://schemas.microsoft.com/windowsazure}Deployments"
-                        select e;
-
-            var list = query.ToList();
-
-            list.ForEach(x =>
+            using (HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse())            
+            using (Stream responseStream = httpWebResponse.GetResponseStream())
+            using (StreamReader reader = new StreamReader(responseStream))
             {
-                var deployments = from e in x.Elements()
-                                  select new Tuple<string,string>( (string)e.Element("{http://schemas.microsoft.com/windowsazure}Url") , (string)e.Element("{http://schemas.microsoft.com/windowsazure}Status") );                
-                
-              
-                deployments.ToList().ForEach(xx =>
+                var result = XDocument.Parse(reader.ReadToEnd());
+
+                var query = from e in result.Elements().Elements()
+                            where e.Name == "{http://schemas.microsoft.com/windowsazure}Deployments"
+                            select e;
+
+                var list = query.ToList();
+
+                list.ForEach(x =>
                 {
-                    if(deploymentTracker.ContainsKey(xx.Item1))
+                    var deployments = from e in x.Elements()
+                                      select new Tuple<string, string>((string)e.Element("{http://schemas.microsoft.com/windowsazure}Url"), (string)e.Element("{http://schemas.microsoft.com/windowsazure}Status"));
+
+
+                    deployments.ToList().ForEach(xx =>
                     {
-                        if (deploymentTracker[xx.Item1] != xx.Item2)
+                        if (deploymentTracker.ContainsKey(xx.Item1))
                         {
-                            Console.WriteLine(string.Format("Status has changed for {0} to {1}"));
-                            deploymentTracker[xx.Item1] = xx.Item2;
+                            if (deploymentTracker[xx.Item1] != xx.Item2)
+                            {
+                                Console.WriteLine(string.Format("Status has changed for {0} to {1}"));
+                                deploymentTracker[xx.Item1] = xx.Item2;
+                            }
+                            else
+                            {
+                                Console.Write(".");
+                            }
                         }
                         else
                         {
-                            Console.Write("...no status changes...");
+                            deploymentTracker.Add(xx.Item1, xx.Item2);
+                            Console.WriteLine(string.Format("Tracking {0} with a status of {1}.", xx.Item1, xx.Item2));
                         }
                     }
-                    else
-                    {
-                        deploymentTracker.Add(xx.Item1,xx.Item2);
-                        Console.WriteLine(string.Format("Tracking {0} with a status of {1}.",xx.Item1,xx.Item2));
-                    }                    
+                    );
+
                 }
                 );
-
-            }
-            );
-
-            
-            // Close the resources no longer needed.
-            httpWebResponse.Close();
-            responseStream.Close();
-            reader.Close();
+            }               
         }
     }
 }

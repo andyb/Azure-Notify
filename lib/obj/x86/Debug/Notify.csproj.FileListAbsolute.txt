@@ -3,3 +3,8 @@ C:\AllFiles\git\azure notify\Notify\bin\Debug\Notify.pdb
 C:\AllFiles\git\azure notify\Notify\obj\x86\Debug\ResolveAssemblyReference.cache
 C:\AllFiles\git\azure notify\Notify\obj\x86\Debug\Notify.exe
 C:\AllFiles\git\azure notify\Notify\obj\x86\Debug\Notify.pdb
+C:\AllFiles\git\azure_notify\lib\obj\x86\Debug\Notify.exe
+C:\AllFiles\git\azure_notify\lib\obj\x86\Debug\Notify.pdb
+C:\AllFiles\git\azure_notify\lib\bin\Debug\Notify.exe
+C:\AllFiles\git\azure_notify\lib\bin\Debug\Notify.pdb
+C:\AllFiles\git\azure_notify\lib\obj\x86\Debug\ResolveAssemblyReference.cache
